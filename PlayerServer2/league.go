@@ -6,8 +6,10 @@ import (
 	"io"
 )
 
+// League is a more contextual representation of []Player
 type League []Player
 
+// Find pulls the requested player from the []Player
 func (l League) Find(name string) *Player {
 	for i, p := range l {
 		if p.Name == name {
