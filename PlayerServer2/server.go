@@ -8,26 +8,26 @@ import (
 
 const jsonContentType = "application/json"
 
-//Player is the data model to represent a Player within the system
+// Player stores a name with a number of wins
 type Player struct {
 	Name string
 	Wins int
 }
 
-//PlayerStore is the interface to be met for storing data for a PlayerServer
+// PlayerStore stores score information about players
 type PlayerStore interface {
 	GetPlayerScore(name string) int
 	RecordWin(name string)
-	GetLeague() []Player
+	GetLeague() League
 }
 
-//PlayerServer is comprised of a PlayerStore and an http.Handler
+// PlayerServer is a HTTP interface for player information
 type PlayerServer struct {
 	store PlayerStore
 	http.Handler
 }
 
-//NewPlayerServer is a constructore that will return a new PlayerServer utilizing the provided PlayerStore
+// NewPlayerServer creats a PlayerServer with routing configured
 func NewPlayerServer(store PlayerStore) *PlayerServer {
 	p := new(PlayerServer)
 
@@ -71,17 +71,4 @@ func (p *PlayerServer) showScore(w http.ResponseWriter, player string) {
 	}
 
 	fmt.Fprint(w, score)
-}
-
-//GetPlayerScore returns a string representation of the requested player's score, or an empty string if player is not tracked
-func GetPlayerScore(name string) string {
-	if name == "Pepper" {
-		return "20"
-	}
-
-	if name == "Floyd" {
-		return "30"
-	}
-
-	return ""
 }

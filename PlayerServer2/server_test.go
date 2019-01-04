@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,7 +12,7 @@ import (
 type StubPlayerStore struct {
 	scores   map[string]int
 	winCalls []string
-	league   []Player
+	league   League
 }
 
 func (s *StubPlayerStore) GetPlayerScore(name string) int {
@@ -25,7 +24,7 @@ func (s *StubPlayerStore) RecordWin(name string) {
 	s.winCalls = append(s.winCalls, name)
 }
 
-func (s *StubPlayerStore) GetLeague() []Player {
+func (s *StubPlayerStore) GetLeague() League {
 	return s.league
 }
 
@@ -100,35 +99,6 @@ func TestStoreWins(t *testing.T) {
 	})
 }
 
-func TestRecordingWinsAndGettingThem(t *testing.T) {
-	store := NewInMemoryPlayerStore()
-	server := NewPlayerServer(store)
-	player := "Pepper"
-
-	server.ServeHTTP(httptest.NewRecorder(), newPostWinRequest(player))
-	server.ServeHTTP(httptest.NewRecorder(), newPostWinRequest(player))
-	server.ServeHTTP(httptest.NewRecorder(), newPostWinRequest(player))
-
-	t.Run("get score", func(t *testing.T) {
-		resp := httptest.NewRecorder()
-		server.ServeHTTP(resp, newGetScoreRequest(player))
-		assertResponseCode(t, resp.Code, http.StatusOK)
-		assertResponseBody(t, resp.Body.String(), "3")
-	})
-
-	t.Run("get league", func(t *testing.T) {
-		resp := httptest.NewRecorder()
-		server.ServeHTTP(resp, newLeagueRequest())
-		assertResponseCode(t, resp.Code, http.StatusOK)
-		got := getLeagueFromResponse(t, resp.Body)
-		want := []Player{
-			{"Pepper", 3},
-		}
-		assertLeague(t, got, want)
-	})
-
-}
-
 func TestLeague(t *testing.T) {
 	t.Run("It returns the league table as JSON", func(t *testing.T) {
 		wantedLeague := []Player{
@@ -169,12 +139,7 @@ func newLeagueRequest() *http.Request {
 
 func getLeagueFromResponse(t *testing.T, body io.Reader) (league []Player) {
 	t.Helper()
-
-	err := json.NewDecoder(body).Decode(&league)
-
-	if err != nil {
-		t.Fatalf("Unable to parse response from server '%s' into slice of Player, '%v'", body, err)
-	}
+	league, _ = NewLeague(body)
 	return
 }
 
@@ -198,9 +163,15 @@ func assertLeague(t *testing.T, got, want []Player) {
 	}
 }
 
+func assertScoreEquals(t *testing.T, got, want int) {
+	if got != want {
+		t.Errorf("Score Missmatch: got %d want %d", got, want)
+	}
+}
+
 func assertContentType(t *testing.T, resp *httptest.ResponseRecorder, want string) {
 	t.Helper()
 	if resp.Header().Get("content-type") != want {
-		t.Errorf("response did not have content-type of '%s', got %v", want, resp.HeaderMap)
+		t.Errorf("response did not have content-type of '%s', got %v", want, resp.Header())
 	}
 }
