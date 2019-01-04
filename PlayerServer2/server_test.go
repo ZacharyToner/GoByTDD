@@ -175,3 +175,11 @@ func assertContentType(t *testing.T, resp *httptest.ResponseRecorder, want strin
 		t.Errorf("response did not have content-type of '%s', got %v", want, resp.Header())
 	}
 }
+
+func assertNoError(t *testing.T, err error) {
+	t.Helper()
+
+	if err != nil {
+		t.Fatalf("didn't expect an error but got one, %v", err)
+	}
+}
