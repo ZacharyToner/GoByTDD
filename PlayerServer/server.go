@@ -6,17 +6,19 @@ import (
 	"net/http"
 )
 
-// PlayerStore stores score information about players
-type PlayerStore interface {
-	GetPlayerScore(name string) int
-	RecordWin(name string)
-	GetLeague() League
-}
+const jsonContentType = "application/json"
 
 // Player stores a name with a number of wins
 type Player struct {
 	Name string
 	Wins int
+}
+
+// PlayerStore stores score information about players
+type PlayerStore interface {
+	GetPlayerScore(name string) int
+	RecordWin(name string)
+	GetLeague() League
 }
 
 // PlayerServer is a HTTP interface for player information
@@ -25,9 +27,7 @@ type PlayerServer struct {
 	http.Handler
 }
 
-const jsonContentType = "application/json"
-
-//NewPlayerServer generates a new server using the provided PlayerStore
+// NewPlayerServer creats a PlayerServer with routing configured
 func NewPlayerServer(store PlayerStore) *PlayerServer {
 	p := new(PlayerServer)
 
@@ -58,6 +58,11 @@ func (p *PlayerServer) playerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (p *PlayerServer) processWin(w http.ResponseWriter, player string) {
+	p.store.RecordWin(player)
+	w.WriteHeader(http.StatusAccepted)
+}
+
 func (p *PlayerServer) showScore(w http.ResponseWriter, player string) {
 	score := p.store.GetPlayerScore(player)
 
@@ -66,9 +71,4 @@ func (p *PlayerServer) showScore(w http.ResponseWriter, player string) {
 	}
 
 	fmt.Fprint(w, score)
-}
-
-func (p *PlayerServer) processWin(w http.ResponseWriter, player string) {
-	p.store.RecordWin(player)
-	w.WriteHeader(http.StatusAccepted)
 }
