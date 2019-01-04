@@ -109,12 +109,23 @@ func TestRecordingWinsAndGettingThem(t *testing.T) {
 	server.ServeHTTP(httptest.NewRecorder(), newPostWinRequest(player))
 	server.ServeHTTP(httptest.NewRecorder(), newPostWinRequest(player))
 
-	resp := httptest.NewRecorder()
+	t.Run("get score", func(t *testing.T) {
+		resp := httptest.NewRecorder()
+		server.ServeHTTP(resp, newGetScoreRequest(player))
+		assertResponseCode(t, resp.Code, http.StatusOK)
+		assertResponseBody(t, resp.Body.String(), "3")
+	})
 
-	server.ServeHTTP(resp, newGetScoreRequest(player))
-
-	assertResponseCode(t, resp.Code, http.StatusOK)
-	assertResponseBody(t, resp.Body.String(), "3")
+	t.Run("get league", func(t *testing.T) {
+		resp := httptest.NewRecorder()
+		server.ServeHTTP(resp, newLeagueRequest())
+		assertResponseCode(t, resp.Code, http.StatusOK)
+		got := getLeagueFromResponse(t, resp.Body)
+		want := []Player{
+			{"Pepper", 3},
+		}
+		assertLeague(t, got, want)
+	})
 
 }
 
@@ -137,6 +148,7 @@ func TestLeague(t *testing.T) {
 
 		assertResponseCode(t, resp.Code, http.StatusOK)
 		assertLeague(t, got, wantedLeague)
+		assertContentType(t, resp, jsonContentType)
 	})
 }
 
@@ -183,5 +195,12 @@ func assertResponseCode(t *testing.T, got, want int) {
 func assertLeague(t *testing.T, got, want []Player) {
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("League Equality Mismatch: got %v, wanted %v", got, want)
+	}
+}
+
+func assertContentType(t *testing.T, resp *httptest.ResponseRecorder, want string) {
+	t.Helper()
+	if resp.Header().Get("content-type") != want {
+		t.Errorf("response did not have content-type of '%s', got %v", want, resp.HeaderMap)
 	}
 }
